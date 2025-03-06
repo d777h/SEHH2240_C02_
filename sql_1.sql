@@ -1,10 +1,13 @@
 --references:
+--  general: 
+--      introduction to database system, libretext
 --  relationship:
---  https://www.geeksforgeeks.org/relationships-in-sql-one-to-one-one-to-many-many-to-many/
+--      https://www.geeksforgeeks.org/relationships-in-sql-one-to-one-one-to-many-many-to-many/
 --  check constraint:
---  https://www.geeksforgeeks.org/sql-check-constraint/
+--      https://www.geeksforgeeks.org/sql-check-constraint/
 --  enum:
---  https://www.geeksforgeeks.org/enumerator-enum-in-mysql/
+--      https://www.geeksforgeeks.org/enumerator-enum-in-mysql/
+
 
 CREATE TABLE Artists --aggregation of artists and bands. artists can be either a band or an individual like a singer. 
 (
@@ -30,7 +33,7 @@ CREATE TABLE Residency --see this as something like a timeslot. referring to art
 CREATE TABLE Lang --languages used by artists and shows alike
 (
     lang_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    lang_name VARCHAR(20) NOT NULL UNIQUE, --full name.
+    lang_name_en VARCHAR(20) NOT NULL UNIQUE, --full name.
     lang_abb CHAR(3) NOT NULL UNIQUE, --abbreviation. iso 3 letters.
 );
 
@@ -108,7 +111,7 @@ CREATE TABLE Avenues_Rules --limitation
 CREATE TABLE Avenue_Types --what kind of avenue is it?
 (   
     type_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    type_name VARCHAR(50) NOT NULL UNIQUE, --e.g. cafe, nightclub.
+    type_name_en VARCHAR(50) NOT NULL UNIQUE, --e.g. cafe, nightclub.
 );
 
 CREATE TABLE Accessibility
@@ -155,7 +158,14 @@ CREATE TABLE Addresses
 CREATE TABLE Districts --allows easier querying by the 18 districts 
 (
     district_id SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    district_name VARCHAR(30),
+    district_name_en VARCHAR(30),
+    area_id SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+);
+
+CREATE TABLE Area
+( 
+    area_id SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    area_name_en VARCHAR(30),
 );
 
 CREATE TABLE MTR --allows easier quering by nearby MTR stations. MTR station near the avenue might be located in the same district of the avenue so no relation.
@@ -167,10 +177,10 @@ CREATE TABLE MTR --allows easier quering by nearby MTR stations. MTR station nea
 
 CREATE TABLE Events --optional table for organising week or year long events with multiple shows
 (
-    event_id INT NOT NULL PRIMARY KEY, 
+    event_id INT NOT NULL AUT0_INCREMENT PRIMARY KEY, 
     event_startdate DATE NOT NULL, 
     event_enddate DATE CHECK(event_startdate <= event_enddate),
-    event_desc VARCHAR(500), 
+    event_desc VARCHAR(1000), 
 ); 
 
 CREATE TABLE Shows --one-off show or part of an event
@@ -179,10 +189,46 @@ CREATE TABLE Shows --one-off show or part of an event
     show_date DATE,
     show_starttime TIME, 
     show_endtime TIME CHECK(show_starttime <= show_endtime),
-    show_desc VARCHAR(500),
+    show_desc VARCHAR(1000),
     event_id INT FOREIGN KEY REFERENCES Events(event_id), --might be part of a larger event. assign shows to an event.
     avenue_id INT NOT NULL FOREIGN KEY REFERENCES Avenues_Info(avenue_id),  
 );
+
+CREATE TABLE Objects --aggregation of all items in the database, could probably use triggers here
+(
+    object_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    event_id INT UNIQUE FOREIGN KEY REFERENCES Events(event_id) DEFAULT NULL,
+    avenue_id INT UNIQUE FOREIGN KEY REFERENCES Avenue_Info(avenue_id) DEFAULT NULL,
+    artist_id INT UNIQUE FOREIGN KEY REFERENCES Artists(artist_id) DEFAULT NULL, 
+    show_id INT UNIQUE FOREIGN KEY REFERENCES Shows(show_id) DEFAULT NULL,
+    event_id INT UNIQUE FOREIGN KEY REFERENCES Events(event_id) DEFAULT NULL CHECK(
+        (event_id IS NULL AND avenue_id IS NULL AND artist_id IS NULL AND show_id IS NOT NULL) OR
+        (event_id IS NULL AND avenue_id IS NULL AND artist_id IS NOT NULL AND show_id IS NULL) OR 
+        (event_id IS NULL AND avenue_id IS NOT NULL AND artist_id IS NULL AND show_id IS NULL) OR 
+        (event_id IS NOT NULL AND avenue_id IS NULL AND artist_id IS NULL AND show_id IS NULL)
+    )
+); 
+
+CREATE TABLE Tickets --one entry correspond to either one event or one show.
+( 
+    ticket_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    ticket_name_en VARCHAR(255), 
+    ticket_price INT NOT NULL, 
+    event_id INT FOREIGN KEY REFERENCES Events(event_id),
+    show_id INT FOREIGN KEY REFERENCES Shows(show_id) CHECK(
+        (event_id IS NULL AND show_id IS NOT NULL) OR
+        (event_id IS NOT NULL AND show_id IS NULL)
+    )
+    bundle_id INT FOREIGN KEY REFERENCES Bundles(bundle_id)
+); 
+
+CREATE TABLE Bundles --one bundle contains multiple tickets at a discount
+(
+    bundle_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    bundle_name_en VARCHAR(255),
+    bundle_price INT NOT NULL, 
+    bundle_desc VARCHAR(1000),
+); 
 
 --shows and events are not aggregated here beacause both have inherently different property. Also show can be part of event
 
@@ -221,46 +267,11 @@ CREATE TABLE Artists_Lang --many different artists to many different languages
     PRIMARY KEY (lang_id, artist_id), 
 );
 
-CREATE TABLE Artists_Website --associating multiple websites with multiple artists
-(
-    artist_id INT NOT NULL FOREIGN KEY REFERENCES Artists(artist_id), 
-    website_id INT NOT NULL FOREIGN KEY REFERENCES Websites(website_id), 
-    PRIMARY KEY (artist_id, website_id),
-); 
-
-CREATE TABLE Avenues_Info_Website --associating multiple websites with multiple avenues
-(
-    avenue_id INT NOT NULL FOREIGN KEY REFERENCES Avenues_Info(avenue_id), 
-    website_id INT NOT NULL FOREIGN KEY REFERENCES Websites(website_id), 
-    PRIMARY KEY (avenue_id, website_id), 
-);
-
 CREATE TABLE Avenues_Info_Events --assigning multiple events to multiple avenues through out the possible schedules
 (
     avenue_id INT NOT NULL FOREIGN KEY REFERENCES Avenues_Info(avenue_id), 
     event_id INT NOT NULL FOREIGN KEY REFERENCES Events(event_id), 
     PRIMARY KEY(avenue_id, event_id)
-); 
-
-CREATE TABLE Avenues_Contacts
-(
-    avenue_id INT NOT NULL FOREIGN KEY REFERENCES Avenues_Info(avenue_id), 
-    contact_id INT NOT NULL FOREIGN KEY REFERENCES Cotnacts(contact_id), 
-    PRIMARY KEY(avenue_id, contact_id)
-);
-
-CREATE TABLE Artists_Contacts
-(
-    artists_id INT NOT NULL FOREIGN KEY REFERENCES Artists(artist_id), 
-    contact_id INT NOT NULL FOREIGN KEY REFERENCES Contacts(contact_id), 
-    PRIMARY KEY(artist_id, contact_id)
-); 
-
-CREATE TABLE Events_Contacts
-(
-    event_id INT NOT NULL FOREIGN KEY REFERENCES Events(event_id), 
-    contact_id INT NOT NULL FOREIGN KEY REFERENCES Contacts(contact_id), 
-    PRIMARY KEY(event_id, contact_id)
 ); 
 
 CREATE TABLE Individuals_Instruments --track individual guitarists dummers etc
@@ -290,3 +301,17 @@ CREATE TABLE Events_Lang --multiple events to multiple languages used
     lang_id INT NOT NULL FOREIGN KEY REFERENCES Lang(lang_id), 
     PRIMARY KEY(event_id, lang_id)
 ); 
+
+CREATE TABLE Objects_Websites
+(
+    object_id INT NOT NULL FOREIGN KEY REFERENCES Objects(object_id), 
+    Website_id INT NOT NULL FOREIGN KEY REFERENCES Websites(website_id), 
+    PRIMARY KEY(object_id, website_id)
+); 
+
+CREATE TABLE Objects_Contacts
+( 
+    object_id INT NOT NULL FOREIGN KEY REFERENCES Objects(object_id), 
+    contact_id INT NOT NULL FOREIGN KEY REFERENCES Contacts(contact_id),
+    PRIMARY KEY(object_id, contact_id)
+);
