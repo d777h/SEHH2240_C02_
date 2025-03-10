@@ -200,18 +200,21 @@ CREATE TABLE Shows --one-off show or part of an event
     avenue_id INT NOT NULL FOREIGN KEY REFERENCES Avenues_Info(avenue_id),  
 );
 
-CREATE TABLE Objects --aggregation of all items in the database, could probably use triggers here
+CREATE TABLE Objects --aggregation of all possibl items in the database, could probably use triggers here
 (
     object_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     event_id INT UNIQUE FOREIGN KEY REFERENCES Events(event_id) DEFAULT NULL,
     avenue_id INT UNIQUE FOREIGN KEY REFERENCES Avenue_Info(avenue_id) DEFAULT NULL,
     artist_id INT UNIQUE FOREIGN KEY REFERENCES Artists(artist_id) DEFAULT NULL, 
     show_id INT UNIQUE FOREIGN KEY REFERENCES Shows(show_id) DEFAULT NULL,
-    event_id INT UNIQUE FOREIGN KEY REFERENCES Events(event_id) DEFAULT NULL CHECK(
-        (event_id IS NULL AND avenue_id IS NULL AND artist_id IS NULL AND show_id IS NOT NULL) OR
-        (event_id IS NULL AND avenue_id IS NULL AND artist_id IS NOT NULL AND show_id IS NULL) OR 
-        (event_id IS NULL AND avenue_id IS NOT NULL AND artist_id IS NULL AND show_id IS NULL) OR 
-        (event_id IS NOT NULL AND avenue_id IS NULL AND artist_id IS NULL AND show_id IS NULL)
+    event_id INT UNIQUE FOREIGN KEY REFERENCES Events(event_id) 
+    residency_id INT UNIQUE FOREIGN KEY REFERENCES Residency(residency_id) DEFAULT NULL CHECK(
+        (event_id IS NULL AND avenue_id IS NULL AND artist_id IS NULL AND show_id IS NOT NULL AND event_id IS NULL AND residency_id IS NULL) OR
+        (event_id IS NULL AND avenue_id IS NULL AND artist_id IS NOT NULL AND show_id IS NULL AND event_id IS NULL AND residency_id IS NULL) OR 
+        (event_id IS NULL AND avenue_id IS NOT NULL AND artist_id IS NULL AND show_id IS NULL AND event_id IS NULL AND residency_id IS NULL) OR 
+        (event_id IS NOT NULL AND avenue_id IS NULL AND artist_id IS NULL AND show_id IS NULL AND event_id IS NULL AND residency_id IS NULL) OR 
+        (event_id IS NULL AND avenue_id IS NULL AND artist_id IS NULL AND show_id IS NULL AND event_id IS NOT NULL AND residency_id IS NULL) OR
+        (event_id IS NULL AND avenue_id IS NULL AND artist_id IS NULL AND show_id IS NULL AND event_id IS NULL AND residency_id IS NOT NULL)
     )
 ); 
 
