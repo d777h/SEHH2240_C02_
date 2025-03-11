@@ -12,8 +12,8 @@
 CREATE TABLE Artists --aggregation of artists and bands. artists can be either a band or an individual like a singer. 
 (
     artist_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    individual_id INT UNIQUE FOREIGN KEY REFERENCES Individuals(individual_id), 
-    band_id INT UNIQUE FOREIGN KEY REFERENCES Bands(band_id) CHECK((individual_id IS NOT NULL AND band_id IS NULL) OR (individual_id IS NULL AND band_id IS NOT NULL)),
+    individual_id INT UNIQUE FOREIGN KEY REFERENCES Individuals(individual_id) ON DELETE CASCADE, 
+    band_id INT UNIQUE FOREIGN KEY REFERENCES Bands(band_id) ON DELETE CASCADE CHECK((individual_id IS NOT NULL AND band_id IS NULL) OR (individual_id IS NULL AND band_id IS NOT NULL)),
     media_id INT UNIQUE FOREIGN KEY REFERENCES Media(media_id), 
     artist_desc VARCHAR(1000),
     address_id INT FOREIGN KEY REFERENCES Addresses(address_id) --optional. for something like studio address or the mailing address
@@ -81,7 +81,7 @@ CREATE TABLE Subgenres --e.g. dream pop, shoegaze, boom bap. each genre includes
     subgenre_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     subgenre_name_en VARCHAR(255) NOT NULL UNIQUE,
     subgenre_name_cn VARCHAR(255) NOT NULL UNIQUE,
-    genre_id INT NOT NULL FOREIGN KEY REFERENCES Genres(genre_id),
+    genre_id INT NOT NULL FOREIGN KEY REFERENCES Genres(genre_id) ON DELETE CASCADE,
 ); 
 
 CREATE TABLE Avenues_Info
@@ -94,10 +94,10 @@ CREATE TABLE Avenues_Info
     avenue_name_en VARCHAR(255) NOT NULL UNIQUE, 
     avenue_capacity SMALLINT NOT NULL,
     avenue_desc VARCHAR(1000), 
-    accessibility_id INT NOT NULL UNIQUE FOREIGN KEY REFERENCES Accessibility(accessibility_id),
-    address_id INT NOT NULL UNIQUE FOREIGN KEY REFERENCES Addresses(address_id),
+    accessibility_id INT NOT NULL UNIQUE FOREIGN KEY REFERENCES Accessibility(accessibility_id) ON DELETE CASCADE,
+    address_id INT NOT NULL UNIQUE FOREIGN KEY REFERENCES Addresses(address_id) ON DELETE CASCADE,
     type_id INT NOT NULL FOREIGN KEY REFERENCES Avenue_Types(type_id), 
-    avenue_rules_id INT NOT NULL UNIQUE FOREIGN KEY REFERENCES Avenues_Rules(avenue_rules_id), 
+    avenue_rules_id INT NOT NULL UNIQUE FOREIGN KEY REFERENCES Avenues_Rules(avenue_rules_id) ON DELETE CASCADE, 
 );
 
 CREATE TABLE Avenues_Rules --limitation 
@@ -165,7 +165,7 @@ CREATE TABLE Districts --allows easier querying by the 18 districts
 (
     district_id SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     district_name_en VARCHAR(30),
-    area_id SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    area_id SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY ON DELETE CASCADE,
 );
 
 CREATE TABLE Area
@@ -178,7 +178,7 @@ CREATE TABLE MTR --allows easier quering by nearby MTR stations. MTR station nea
 (
     metro_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     metro_name VARCHAR(30),
-    district_id SMALLINT NOT NULL FOREIGN KEY REFERENCES Districts(district_id), 
+    district_id SMALLINT NOT NULL FOREIGN KEY REFERENCES Districts(district_id) ON DELETE CASCADE, 
 );
 
 CREATE TABLE Events --optional table for organising week or year long events with multiple shows
@@ -196,7 +196,7 @@ CREATE TABLE Shows --one-off show or part of an event
     show_starttime TIME, 
     show_endtime TIME CHECK(show_starttime <= show_endtime),
     show_desc VARCHAR(1000),
-    event_id INT FOREIGN KEY REFERENCES Events(event_id), --might be part of a larger event. assign shows to an event.
+    event_id INT FOREIGN KEY REFERENCES Events(event_id) ON DELETE CASCADE, --might be part of a larger event. assign shows to an event.
     avenue_id INT NOT NULL FOREIGN KEY REFERENCES Avenues_Info(avenue_id),  
 );
 
@@ -257,7 +257,7 @@ CREATE TABLE Shows_Artists --many different shows to many different artists
 
 CREATE TABLE Events_Artists --many different events to many different artists
 (
-    event_id INT NOT NULL FOREIGN KEY REFERENCES Events(event_id),
+    event_id INT NOT NULL FOREIGN KEY REFERENCES Events(event_id) ON DELETE CASCADE,
     artist_id INT NOT NULL FOREIGN KEY REFERENCES Artists(artist_id),
     PRIMARY KEY(event_id, artist_id), 
 );
@@ -266,7 +266,6 @@ CREATE TABLE Bands_Individuals --many different bands/groups to many different i
 (
     band_id INT NOT NULL FOREIGN KEY REFERENCES Bands(band_id), 
     individual_id INT NOT NULL FOREIGN KEY REFERENCES Individuals(individual_id), 
-    familiarity_id INT NOT NULL FOREIGN KEY REFERENCES Familiarity(familiarty_id),
     PRIMARY KEY (band_id, individual_id),   
 );
 
@@ -287,7 +286,8 @@ CREATE TABLE Avenues_Info_Events --assigning multiple events to multiple avenues
 CREATE TABLE Individuals_Instruments --track individual guitarists dummers etc
 (
     individual_id INT NOT NULL FOREIGN KEY REFERENCES Individuals(individual_id), 
-    instrument_id INT NULL FOREIGN KEY REFERENCES Instruments(instrument_id), 
+    instrument_id INT NULL FOREIGN KEY REFERENCES Instruments(instrument_id),
+    familiarity_id INT NOT NULL FOREIGN KEY REFERENCES Familiarity(familiarty_id),
     PRIMARY KEY(artist_id, instrument_id)
 );
 
